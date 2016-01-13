@@ -122,6 +122,44 @@ apiRouter.route('/users/:user_id')
 		}) ;
 	})
 
+	// update the user with this id
+	// (accessed at PUT http://localhost:8080/api/users/:user_id)
+	.put(function(req, res) {
+		
+		// use our user model to find the user we want
+		User.findById(req.params.user_id, function(err, user) {
+			
+			if (err) res.send(err) ;
+
+			// update the users info only if it's new
+			if (req.body.name) user.name = req.body.name ;
+			if (req.body.username) user.username = req.body.username ;
+			if (req.body.password) user.password = req.body.password ;
+
+			// save the user
+			user.save(function(err) {
+				if (err) res.send(err) ;
+
+				// return a message
+				res.json({ message: 'User updated!' }) ;
+			}) ;
+
+		}) ;
+	}) 
+
+
+	// delete the user with this id
+	// (accessed at DELETE http://localhost:8080/api/users/:user_id)
+	.delete(function(req, res) {
+		User.remove({
+			_id: req.params.user_id
+		}, function(err,user) {
+			if(err) return res.send(err) ;
+
+			res.json({ message: 'Successfully deleted' }) ;
+		}) ;
+	}) ;
+
 
 	
 
