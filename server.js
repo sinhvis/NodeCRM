@@ -9,6 +9,12 @@ var morgan	= require('morgan') ; // used to see requests
 var mongoose	= require('mongoose') // for working with our database
 var port	= process.env.PORT || 8080 ; // set the port for our app
 
+// Grab the jsonwebtoken package
+var jwt = require('jsonwebtoken') ;
+
+// Part of the JWT is made using a secret
+var superSecret = 'ilovehanuman' ;
+
 
 // connect to our database
 mongoose.connect('mongodb://localhost:27017/myDatabase') ;
@@ -45,6 +51,55 @@ var apiRouter = express.Router() ;
 
 
 // more routes for our API will happen there
+
+// route to authenticate a user (POST: http://localhost:8080/api/authenticate)
+apiRouter.post('/authenticate', function(req, res) {
+	
+	// find the user
+	// select the name, username and password explicitly
+	User.findOne({
+		username: req.body.username
+	}).select('name username password').exec(function(err, user) {
+
+		if (err) throw err ;
+
+		// no user with that username was found
+		if (!user) {
+			res.json({
+				success: false,
+				message: 'Authentication failed. User not found.'
+			}) ;
+		} else if (user) {
+			
+			// check if password matches
+			var validPassword = user.comparePassword(req.body.password) ;
+			if(!validPassword) {
+				res.json({
+					success: false,
+					message: 'Authentication failed. Wrong password.'
+				}) ;
+			} else {
+				
+				// if user is found and password is right
+				// create a token
+				var token = jwt.sign({
+					name: user.name,
+					username: user.username
+				}, superSecret, {
+					expiresInMinutes: 1440 // expires in 24 hours
+				}) ;
+
+				// return the information including token as JSON
+				res.json({
+					success: true,
+					message: 'Enjoy your token!',
+					token: token
+				})
+			}
+		}
+	}) ;
+}) ;
+
 
 // middleware to use for all requests
 apiRouter.use(function(req, res, next) {
@@ -166,6 +221,7 @@ apiRouter.route('/users/:user_id')
 // REGISTER OUR ROUTES
 // all of our routes will be prefixed with /api
 app.use('/api', apiRouter) ;
+
 
 // START THE SERVER
 // =============================================
